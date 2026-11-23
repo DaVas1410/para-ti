@@ -74,13 +74,45 @@
   }
   footer .heart { color: #ff5f87; }
 
+  /* ---------- pantalla de inicio ---------- */
+  body.locked { overflow: hidden; }
+  #intro {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2.4rem; padding: 16px;
+    font-family: var(--mono); color: var(--ink);
+    cursor: pointer; border: 0; width: 100%;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 1s ease, visibility 1s;
+  }
+  #intro.gone { opacity: 0; visibility: hidden; }
+  #intro .line { font-size: clamp(14px, 4vw, 18px); min-height: 1.4em; letter-spacing: .02em; text-align: center; }
+  #intro .line .prompt { color: #ff5f87; }
+  #intro .cursor { display: inline-block; width: .6em; background: var(--soft); animation: blink 1s steps(1) infinite; }
+  #intro .tap {
+    font-size: 13px; color: var(--soft); letter-spacing: .12em;
+    opacity: 0; transition: opacity 1.2s ease;
+  }
+  #intro .tap.show { opacity: 1; animation: pulse 2.4s ease-in-out 1.2s infinite; }
+  #intro .tap .h { color: #ff5f87; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @keyframes pulse { 50% { opacity: .45; } }
+
   @media (prefers-reduced-motion: reduce) {
     .scroll-hint { animation: none; }
     .note { transition: none; opacity: 1; transform: none; }
+    #intro .tap.show { animation: none; }
   }
 </style>
 </head>
-<body>
+<body class="locked">
+
+<!-- ✎ PANTALLA DE INICIO: cambia el texto de data-text y el del botón -->
+<button id="intro" type="button" aria-label="Abrir">
+  <div class="line"><span class="prompt">&gt; </span><span id="typed" data-text="tienes un mensaje nuevo"></span><span class="cursor">&nbsp;</span></div>
+  <div class="tap" id="tap">[ toca para abrir <span class="h">♥</span> ]</div>
+</button>
 
 <section class="hero">
   <pre id="art" aria-label="Un ramo de flores en arte ASCII girando"></pre>
@@ -123,6 +155,9 @@
   const CAM_DIST = 4.0;
   const NUM_HEARTS = 18;
   const FRAME_W = 3.1, FRAME_H = 1.62, FRAME_TOP = 0.9;   // encuadre del ramo
+  const BLOOM_SECS = 2.2;       // cuánto tarda el ramo en "florecer" al abrir
+  const MUSIC = "";             // opcional: pon un .mp3 junto a index.html, p. ej. "cancion.mp3"
+  const TYPE_MS = 70;           // velocidad de escritura de la pantalla de inicio
 
   // ================= paletas (xterm-256) =================
   const WHITE = [244, 248, 251, 254, 255, 231];
@@ -373,7 +408,10 @@
     chars.fill(" "); colors.fill(0); zbuf.fill(-1e9);
 
     const viewRows = rows - 2;
-    const scale = Math.max(1, Math.min((viewRows - 2) / FRAME_H, (cols - 2) / FRAME_W));
+    // el ramo "florece" al abrir: crece de 0 a su tamaño con un pequeño rebote
+    const g = Math.min(1, t / BLOOM_SECS);
+    const grow = g >= 1 ? 1 : 1 + 2.2 * Math.pow(g - 1, 3) + 1.2 * Math.pow(g - 1, 2);
+    const scale = Math.max(0.01, grow * Math.max(1, Math.min((viewRows - 2) / FRAME_H, (cols - 2) / FRAME_W)));
     const sxs = scale * 2;
     const cx = cols / 2, cy = 1 + FRAME_TOP * scale;
     const ang = t * SPIN_SPEED;
@@ -499,10 +537,10 @@
   }
 
   // ================= bucle =================
-  let t0 = performance.now(), last = t0, lastDraw = 0, visible = true;
+  let t0 = performance.now(), last = t0, lastDraw = 0, visible = true, opened = false;
   function frame(now) {
     requestAnimationFrame(frame);
-    if (!visible || now - lastDraw < 1000 / FPS - 2) return;
+    if (!opened || !visible || now - lastDraw < 1000 / FPS - 2) return;
     const dt = Math.min(0.1, (now - last) / 1000);
     last = lastDraw = now;
     updateHearts(dt);
@@ -520,6 +558,33 @@
   art.addEventListener("click", e => {
     const r = art.getBoundingClientRect();
     burst((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height * rows / (rows - 2));
+  });
+
+  // ================= pantalla de inicio =================
+  const intro = document.getElementById("intro");
+  const typed = document.getElementById("typed");
+  const tap = document.getElementById("tap");
+  const introText = Array.from(typed.dataset.text);
+  let k = 0;
+  (function typeNext() {
+    if (opened) return;
+    if (k < introText.length) { typed.textContent += introText[k++]; setTimeout(typeNext, TYPE_MS + Math.random() * 60); }
+    else setTimeout(() => tap.classList.add("show"), 400);
+  })();
+
+  const audio = MUSIC ? new Audio(MUSIC) : null;
+  if (audio) { audio.loop = true; audio.volume = 0.6; }
+
+  intro.addEventListener("click", () => {
+    if (opened) return;
+    opened = true;
+    if (audio) audio.play().catch(() => {});
+    intro.classList.add("gone");
+    document.body.classList.remove("locked");
+    window.scrollTo(0, 0);
+    t0 = last = performance.now();
+    setTimeout(() => burst(0.5, 0.45), BLOOM_SECS * 800);
+    setTimeout(() => intro.remove(), 1200);
   });
 
   requestAnimationFrame(frame);
