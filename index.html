@@ -96,6 +96,17 @@
   }
   #intro .tap.show { opacity: 1; animation: pulse 2.4s ease-in-out 1.2s infinite; }
   #intro .tap .h { color: #ff5f87; }
+  #music {
+    position: fixed; right: 16px; bottom: 16px; z-index: 5;
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid var(--dim); background: rgba(6, 3, 8, .7);
+    color: var(--soft); font: 16px var(--mono); cursor: pointer;
+    display: none; align-items: center; justify-content: center;
+    transition: opacity .3s, border-color .3s;
+  }
+  #music.on { display: flex; }
+  #music.muted { opacity: .45; text-decoration: line-through; }
+  #music:hover { border-color: var(--soft); }
   @keyframes blink { 50% { opacity: 0; } }
   @keyframes pulse { 50% { opacity: .45; } }
 
@@ -113,6 +124,8 @@
   <div class="line"><span class="prompt">&gt; </span><span id="typed" data-text="tienes un mensaje nuevo"></span><span class="cursor">&nbsp;</span></div>
   <div class="tap" id="tap">[ toca para abrir <span class="h">♥</span> ]</div>
 </button>
+
+<button id="music" type="button" aria-label="Pausar música">♪</button>
 
 <section class="hero">
   <pre id="art" aria-label="Un ramo de flores en arte ASCII girando"></pre>
@@ -157,6 +170,7 @@
   const FRAME_W = 3.1, FRAME_H = 1.62, FRAME_TOP = 0.9;   // encuadre del ramo
   const BLOOM_SECS = 2.2;       // cuánto tarda el ramo en "florecer" al abrir
   const MUSIC = "";             // opcional: pon un .mp3 junto a index.html, p. ej. "cancion.mp3"
+  const MUSIC_VOLUME = 0.6;     // volumen final (0 a 1); entra subiendo durante ~4 s
   const TYPE_MS = 70;           // velocidad de escritura de la pantalla de inicio
 
   // ================= paletas (xterm-256) =================
@@ -573,12 +587,26 @@
   })();
 
   const audio = MUSIC ? new Audio(MUSIC) : null;
-  if (audio) { audio.loop = true; audio.volume = 0.6; }
+  const musicBtn = document.getElementById("music");
+  if (audio) {
+    audio.loop = true; audio.volume = 0; audio.preload = "auto";
+    audio.addEventListener("play", () => {          // sube el volumen poco a poco
+      const target = MUSIC_VOLUME, step = target / 40;
+      const fade = setInterval(() => {
+        audio.volume = Math.min(target, audio.volume + step);
+        if (audio.volume >= target || audio.paused) clearInterval(fade);
+      }, 100);
+    });
+    musicBtn.addEventListener("click", () => {
+      if (audio.paused) { audio.play().catch(() => {}); musicBtn.classList.remove("muted"); musicBtn.setAttribute("aria-label", "Pausar música"); }
+      else { audio.pause(); audio.volume = 0; musicBtn.classList.add("muted"); musicBtn.setAttribute("aria-label", "Reanudar música"); }
+    });
+  }
 
   intro.addEventListener("click", () => {
     if (opened) return;
     opened = true;
-    if (audio) audio.play().catch(() => {});
+    if (audio) { audio.play().catch(() => {}); musicBtn.classList.add("on"); }
     intro.classList.add("gone");
     document.body.classList.remove("locked");
     window.scrollTo(0, 0);
