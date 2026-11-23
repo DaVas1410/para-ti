@@ -53,6 +53,7 @@
   }
   .note { margin-bottom: 18vh; opacity: 0; transform: translateY(24px); transition: opacity 1.4s ease, transform 1.4s ease; }
   .note.visible { opacity: 1; transform: none; }
+  .note:last-child { margin-bottom: 0; }
   .label {
     font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
     color: var(--dim); margin-bottom: 1.2rem;
@@ -92,7 +93,7 @@
   #intro .cursor { display: inline-block; width: .6em; background: var(--soft); animation: blink 1s steps(1) infinite; }
   #intro .tap {
     font-size: 13px; color: var(--soft); letter-spacing: .12em;
-    opacity: 0; transition: opacity 1.2s ease;
+    opacity: 0; transition: opacity .6s ease;
   }
   #intro .tap.show { opacity: 1; animation: pulse 2.4s ease-in-out 1.2s infinite; }
   #intro .tap .h { color: #ff5f87; }
@@ -137,29 +138,18 @@
 
 <main class="letter" id="carta">
 
-  <!-- ✎ TEXTO 1: cambia el título y los párrafos -->
+  <!-- ✎ TEXTO: cambia el título y los párrafos -->
   <article class="note">
-    <div class="label">// carta nº 1</div>
-    <h2>Aunque estemos lejos</h2>
+    <h2>Hasta que nos volvamos a ver</h2>
     <p>Estamos lejos, y hay días en que eso se siente más.</p>
     <p>Me gustaría darte flores de verdad, pero ahora mismo no puedo.</p>
     <p>Así que te hice estas, para que las veas cuando quieras.</p>
-  </article>
-
-  <!-- ✎ TEXTO 2 -->
-  <article class="note">
-    <div class="label">// carta nº 2</div>
-    <h2>Hasta que nos volvamos a ver</h2>
     <p>Cada vez que las abras, acuérdate de que estoy pensando en ti.</p>
     <p>Cuando nos volvamos a ver, te llevo unas de verdad.</p>
     <p>Te extraño. Te amo.</p>
   </article>
 
 </main>
-
-<footer>
-  hecho con <span class="heart">♥</span> · ramo ascii original de @alishsharma (tiktok)
-</footer>
 
 <span id="probe"></span>
 
@@ -179,7 +169,7 @@
   const YOUTUBE_START = 0;      // segundo en el que empieza la canción
   const MUSIC = "";             // alternativa: p. ej. "cancion.mp3"
   const MUSIC_VOLUME = 0.3;     // volumen final (0 a 1); entra subiendo durante ~4 s
-  const TYPE_MS = 70;           // velocidad de escritura de la pantalla de inicio
+  const TYPE_MS = 35;           // velocidad de escritura de la pantalla de inicio
 
   // ================= paletas (xterm-256) =================
   const WHITE = [244, 248, 251, 254, 255, 231];
@@ -590,8 +580,8 @@
   let k = 0;
   (function typeNext() {
     if (opened) return;
-    if (k < introText.length) { typed.textContent += introText[k++]; setTimeout(typeNext, TYPE_MS + Math.random() * 60); }
-    else setTimeout(() => tap.classList.add("show"), 400);
+    if (k < introText.length) { typed.textContent += introText[k++]; setTimeout(typeNext, TYPE_MS + Math.random() * 25); }
+    else setTimeout(() => tap.classList.add("show"), 100);
   })();
 
   // ================= música =================
